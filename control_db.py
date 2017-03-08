@@ -28,7 +28,7 @@ class ControlDB:
          
         """
 
-        created_engine = create_engine('mysql+pymysql://xxxx:xxxx@localhost:3306/xxxxx')
+        created_engine = create_engine('mysql+pymysql://xxxx:xxxx@localhost:3306/xxxx')
         return created_engine
 
     def init_db(self):
