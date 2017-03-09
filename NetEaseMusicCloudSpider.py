@@ -1,0 +1,208 @@
+""" 网易云音乐评论爬虫(API版) """
+
+__author__ = 'Cichar'
+__version__ = '0.2'
+
+from urllib.request import urlopen, Request
+from time import sleep
+from datetime import datetime
+from selenium import webdriver
+import json
+import random
+
+from control_db import ControlDB
+from models import PlayList, DzMusic
+from headers import user_agent
+from decorator import retry
+
+
+class NetEaseMusicCloudSpider:
+    def __init__(self):
+        self.db = ControlDB()
+        self.style = {
+            '电子': '%E7%94%B5%E5%AD%90',
+            'ACG': 'ACG'
+        }
+        self.db_style = {
+            '电子': DzMusic
+        }
+        self.headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Accept-Encoding': 'deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.8',
+            'Connection': 'keep-alive',
+            'Host': 'music.163.com',
+            'User-Agent': '',
+                        }
+
+    def search_playlist(self, page_num=None, music_style=None):
+        """
+    
+        通过歌单列表获取列表中的歌单ID
+        歌单列表格式：http://music.163.com/#/discover/playlist/?order=hot&cat=%s&limit=35&offset=
+        歌单列表规则：cat=     后接歌单风格
+                   limit=35 为每页列表限制的歌单数量
+                   offset=  后接偏移量，以limit为基数，基于页码递增。 
+    
+        :return: 
+    
+        """
+
+        driver = webdriver.PhantomJS('')
+
+        tag = self.style[music_style]
+
+        if not page_num:
+            # 如果没有传入页码数，则获取页码数
+            url = 'http://music.163.com/#/discover/playlist/?order=hot&cat=%s' % tag
+            driver.get(url)
+            driver.switch_to.frame('g_iframe')
+            pages = driver.find_elements_by_xpath('//a[@class="zpgi"]')
+            page_num = int(pages[-1].text)
+
+        for i in range(page_num):
+            # 歌单列表URL规则，offset=后面接页码，从0开始，以35为基数递增
+            base_url = 'http://music.163.com/#/discover/playlist/?order=hot&cat=%s&limit=35&offset=' % tag
+
+            pagenum = i * 35
+            driver.get(base_url + str(pagenum))
+
+            # 进入iframe
+            driver.switch_to.frame('g_iframe')
+
+            # 定位歌单ID
+            ids = driver.find_elements_by_xpath('//a[@data-res-id]')
+
+            for id in ids:
+                playlist = PlayList(id=id.get_attribute('data-res-id'), tag=music_style)
+                self.db.session.add(playlist)
+            self.db.session.commit()
+
+    @retry
+    def get_music_list(self, playlist_id, tag=None):
+        """
+    
+        从歌单中爬取该歌单所包含的歌曲ID
+        歌单API：http://music.163.com/api/playlist/detail?id=playlist_id
+        歌曲ID格式：R_SO_4_DDDDDDDD
+    
+        :param tag: 歌单标签
+        :param playlist_id: 歌单ID
+        :return: 
+    
+        """
+
+        try:
+            sleep(0.5)
+            self.headers['User-Agent'] = random.choice(user_agent)
+            req = Request(url='http://music.163.com/api/playlist/detail?id={}'.format(playlist_id), headers=self.headers)
+
+            # 通过歌单API获取JSON数据
+            response = urlopen(req)
+            data = response.read().decode()
+
+            # 解析JSON数据
+            result = json.loads(data)
+
+            # 从解析过的数据中获取歌曲数据
+            clear_result = result['result']['tracks']
+
+            if clear_result:
+                # 遍历数据中的歌曲ID
+                for i in range(len(clear_result)):
+                    self.get_music_info(music_id=clear_result[i]['commentThreadId'], tag=tag)
+            else:
+                print('歌单数据解析失败')
+        except Exception as e:
+            # print(self.headers['User-Agent'])
+            # print(e)
+            pass
+
+    @retry
+    def get_music_comment(self, music_id):
+        """
+    
+        通过歌曲评论API爬取该歌单的评论数量
+        歌曲评论API：http://music.163.com/api/v1/resource/comments/music_id
+        歌曲ID格式：R_SO_4_DDDDDDDD
+    
+        :param music_id: 歌曲ID
+        :return: 
+    
+        """
+
+        self.headers['User-Agent'] = random.choice(user_agent)
+        req = Request(url='http://music.163.com/api/v1/resource/comments/{}'.format(music_id), headers=self.headers)
+
+        # 通过歌曲API获取JSON数据
+        response = urlopen(req)
+        data = response.read().decode()
+
+        # 解析JSON数据
+        result = json.loads(data)
+
+        comment_num = result['total']
+
+        if comment_num:
+            return comment_num
+        else:
+            print('歌曲评论数据获取失败')
+
+    @retry
+    def get_music_info(self, music_id=None, tag=None):
+        """
+    
+        通过歌曲API爬取该歌单的信息
+        歌曲信息API：http://music.163.com/api/song/detail/?id=music_id&ids=[music_id]
+        歌曲ID格式：R_SO_4_DDDDDDDD
+        歌曲ID格式化：music_id[7:]
+    
+        :param tag: 歌曲标签
+        :param music_id: 歌曲ID(未格式化)
+        :return: 歌曲名，歌手，发行时间, 歌曲评论数，歌曲标签
+    
+        """
+
+        sleep(0.2)
+        self.headers['User-Agent'] = random.choice(user_agent)
+        req = Request(url='http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:]), headers=self.headers)
+
+        # 通过歌曲API获取JSON数据
+        response = urlopen(req)
+        data = response.read().decode()
+
+        # 解析JSON数据
+        result = json.loads(data)
+
+        # 获取歌曲名，歌手，发行时间
+        music_name, music_singer, publish_time = result['songs'][0]['name'], \
+                                                 result['songs'][0]['artists'][0]['name'], \
+                                                 result['songs'][0]['album']['publishTime']
+
+        # 获取歌曲评论数
+        music_comment_num = self.get_music_comment(music_id)
+
+        # 格式化时间
+        date = lambda time: datetime.fromtimestamp(time/1000).date()
+
+        # 根据tag选择对应的数据模型
+        model = self.db_style[tag]
+
+        # 已存在的数据进行更新，否则创建
+        music = self.db.session.query(model).filter_by(id=music_id[7:]).first()
+        if music:
+            current_comments_num = music.comments
+            if current_comments_num != music_comment_num:
+                music.comments = music_comment_num
+                self.db.session.commit()
+                update_comments_num = music.comments
+                print('更新歌曲信息:{0}  成功, {1} --> {2}'.format(music_id[7:], current_comments_num, update_comments_num))
+            else:
+                return
+        else:
+            music = model(id=music_id[7:], music_name=music_name, music_singer=music_singer,
+                          publish_time=date(publish_time), comments=music_comment_num)
+            self.db.session.add(music)
+            self.db.session.commit()
+            print('创建歌曲信息:%s  成功' % (music_id[7:]))
