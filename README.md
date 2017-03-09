@@ -1,7 +1,6 @@
 # NetEaseMusicCloud-Spider
 crawl music comment by api，better than the first version(WYYCloud).
 
-<div>
 <h2>NetEaseMusicCloud-Spider</h2>
       |-- main.py
       |-- NetEaseMusicCloudSpider.py
@@ -9,7 +8,6 @@ crawl music comment by api，better than the first version(WYYCloud).
       |-- models.py
       |-- headers.py
       |-- decorator.py
-</div>
       
 主入口：main.py
 爬取模块：NetEaseMusicCloudSpider.py
