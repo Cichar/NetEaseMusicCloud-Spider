@@ -3,7 +3,7 @@
 __author__ = 'Cichar'
 __version__ = '0.2'
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Integer, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -19,6 +19,26 @@ class PlayList(Base):
     __tablename__ = 'playlists'
 
     id = Column(String(64), primary_key=True)
+    tag = Column(String(256))
 
     def __repr__(self):
         return 'Playlist %r' % self.id
+
+
+class DzMusic(Base):
+    """
+    
+    电子歌曲数据表
+    
+    """
+
+    __tablename__ = 'dz_musics'
+
+    id = Column(Integer(), primary_key=True)
+    music_name = Column(String(256))
+    music_singer = Column(String(128))
+    publish_time = Column(DateTime())
+    comments = Column(Integer())
+
+    def __repr__(self):
+        return 'DMusic %r' % self.id
