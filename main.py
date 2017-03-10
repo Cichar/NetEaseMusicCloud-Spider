@@ -4,7 +4,7 @@ __author__ = 'Cichar'
 __version__ = '0.2'
 
 from NetEaseMusicCloudSpider import NetEaseMusicCloudSpider
-from models import PlayList, DzMusic
+from models import PlayList, DzMusic, ACGMusic
 
 spider = NetEaseMusicCloudSpider()
 
@@ -14,7 +14,7 @@ def run():
 
     while spider.db.session.query(PlayList).first():
         playlist = spider.db.session.query(PlayList).first()
-        playlist_id, tag = playlist.id, playlist.tag
+        playlist_id, tag = playlist.playlist_id, playlist.tag
         spider.db.session.delete(playlist)
         spider.db.session.commit()
         spider.get_music_list(playlist_id=playlist_id, tag=tag)
@@ -26,14 +26,16 @@ def schemas_info():
 
     playlist_num = spider.db.session.query(PlayList).count()
     dz_music_num = spider.db.session.query(DzMusic).count()
+    acg_music_num = spider.db.session.query(ACGMusic).count()
 
     print('待爬取歌单：{}'.format(playlist_num))
     print('电子歌曲：{}'.format(dz_music_num))
+    print('ACG歌曲：{}'.format(acg_music_num))
 
 if __name__ == '__main__':
     # print(spider.db.session.query(PlayList).count())
     # spider.get_music_list(108600061)
     # spider.db.init_db()
-    # spider.search_playlist(music_style='ACG')
+    # spider.search_playlist(music_style='电子')
     # run()
     schemas_info()

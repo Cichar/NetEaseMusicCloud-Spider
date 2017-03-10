@@ -18,7 +18,8 @@ class PlayList(Base):
 
     __tablename__ = 'playlists'
 
-    id = Column(String(64), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    playlist_id = Column(String(64))
     tag = Column(String(256))
 
     def __repr__(self):
@@ -41,4 +42,23 @@ class DzMusic(Base):
     comments = Column(Integer())
 
     def __repr__(self):
-        return 'DMusic %r' % self.id
+        return 'DzMusic %r' % self.id
+
+
+class ACGMusic(Base):
+    """
+
+    ACG歌曲数据表
+
+    """
+
+    __tablename__ = 'acg_musics'
+
+    id = Column(Integer(), primary_key=True)
+    music_name = Column(String(256))
+    music_singer = Column(String(128))
+    publish_time = Column(DateTime())
+    comments = Column(Integer())
+
+    def __repr__(self):
+        return 'ACGMusic %r' % self.id

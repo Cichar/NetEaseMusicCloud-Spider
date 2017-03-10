@@ -11,7 +11,7 @@ import json
 import random
 
 from control_db import ControlDB
-from models import PlayList, DzMusic
+from models import PlayList, DzMusic, ACGMusic
 from headers import user_agent
 from decorator import retry
 
@@ -24,7 +24,8 @@ class NetEaseMusicCloudSpider:
             'ACG': 'ACG'
         }
         self.db_style = {
-            '电子': DzMusic
+            '电子': DzMusic,
+            'ACG': ACGMusic
         }
         self.headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -75,7 +76,7 @@ class NetEaseMusicCloudSpider:
             ids = driver.find_elements_by_xpath('//a[@data-res-id]')
 
             for id in ids:
-                playlist = PlayList(id=id.get_attribute('data-res-id'), tag=music_style)
+                playlist = PlayList(playlist_id=id.get_attribute('data-res-id'), tag=music_style)
                 self.db.session.add(playlist)
             self.db.session.commit()
 
@@ -116,8 +117,8 @@ class NetEaseMusicCloudSpider:
                 print('歌单数据解析失败')
         except Exception as e:
             # print(self.headers['User-Agent'])
-            # print(e)
-            pass
+            print(e)
+            # pass
 
     @retry
     def get_music_comment(self, music_id):
