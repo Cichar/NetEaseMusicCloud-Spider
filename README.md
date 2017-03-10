@@ -10,6 +10,9 @@ NetEaseMusicCloud-Spider
     |-- models.py
     |-- headers.py
     |-- decorator.py
+    |-- proxy_pool
+             |-- ip_spider.py
+             |-- parse_html.py
 ```
 ##### 主入口：main.py     
        提供通过歌单来爬取及更新数据库歌曲信息的函数：run()     
@@ -34,3 +37,11 @@ NetEaseMusicCloud-Spider
        
 ##### 装饰器：decorator.py  
        提供异常重试装饰器：retry()
+       
+##### 代理池：proxy_pool
+```
+   ip_spider.py
+       代理池爬虫，目前提供两个代理ip网站的爬取
+   parse_html.py
+       为代理池爬虫提供网页解析及头部定义
+```            
