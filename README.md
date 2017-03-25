@@ -33,7 +33,9 @@ NetEaseMusicCloud-Spider
 ##### 数据储存模型：models.py  
        PlayList：歌单数据表，作为爬虫目标歌单的临时储存  
        DzMusic：电子风格数据表  
-       ACGMusic：ACG风格数据表
+       ACGMusic：ACG风格数据表  
+       LightMusic：轻音乐风格数据表  
+       ZyMusic：治愈风格数据表
        
 ##### 爬虫头部定义模块：headers.py  
        提供十几种User-Agent定义
