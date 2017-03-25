@@ -62,3 +62,41 @@ class ACGMusic(Base):
 
     def __repr__(self):
         return 'ACGMusic %r' % self.id
+
+
+class LightMusic(Base):
+    """
+
+    轻音乐歌曲数据表
+
+    """
+
+    __tablename__ = 'light_musics'
+
+    id = Column(Integer(), primary_key=True)
+    music_name = Column(String(256))
+    music_singer = Column(String(128))
+    publish_time = Column(DateTime())
+    comments = Column(Integer())
+
+    def __repr__(self):
+        return 'LightMusic %r' % self.id
+
+
+class ZyMusic(Base):
+    """
+
+    治愈歌曲数据表
+
+    """
+
+    __tablename__ = 'zy_musics'
+
+    id = Column(Integer(), primary_key=True)
+    music_name = Column(String(256))
+    music_singer = Column(String(128))
+    publish_time = Column(DateTime())
+    comments = Column(Integer())
+
+    def __repr__(self):
+        return 'ZyMusic %r' % self.id
