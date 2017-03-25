@@ -11,21 +11,21 @@ import json
 import random
 
 from control_db import ControlDB
-from models import PlayList, DzMusic, ACGMusic
+from models import PlayList, DzMusic, ACGMusic, LightMusic, ZyMusic
 from headers import user_agent
 from decorator import retry
+from music_style import music_style
 
 
 class NetEaseMusicCloudSpider:
     def __init__(self):
         self.db = ControlDB()
-        self.style = {
-            '电子': '%E7%94%B5%E5%AD%90',
-            'ACG': 'ACG'
-        }
+        self.style = music_style
         self.db_style = {
             '电子': DzMusic,
-            'ACG': ACGMusic
+            'ACG': ACGMusic,
+            '轻音乐': LightMusic,
+            '治愈': ZyMusic
         }
         self.headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -50,7 +50,7 @@ class NetEaseMusicCloudSpider:
     
         """
 
-        driver = webdriver.PhantomJS('')
+        driver = webdriver.PhantomJS('G:/PhantomJS/phantomjs-2.1.1-windows/bin/phantomjs')
 
         tag = self.style[music_style]
 
@@ -79,6 +79,7 @@ class NetEaseMusicCloudSpider:
                 playlist = PlayList(playlist_id=id.get_attribute('data-res-id'), tag=music_style)
                 self.db.session.add(playlist)
             self.db.session.commit()
+        print('{0} 扫描完毕'.format(music_style))
 
     @retry
     def get_music_list(self, playlist_id, tag=None):
@@ -97,11 +98,12 @@ class NetEaseMusicCloudSpider:
         try:
             sleep(0.5)
             self.headers['User-Agent'] = random.choice(user_agent)
-            req = Request(url='http://music.163.com/api/playlist/detail?id={}'.format(playlist_id), headers=self.headers)
+            req = Request(url='http://music.163.com/api/playlist/detail?id={}'.format(playlist_id),
+                          headers=self.headers)
 
             # 通过歌单API获取JSON数据
             response = urlopen(req)
-            data = response.read().decode()
+            data = response.read().decode('utf-8', 'ignore')
 
             # 解析JSON数据
             result = json.loads(data)
@@ -138,7 +140,7 @@ class NetEaseMusicCloudSpider:
 
         # 通过歌曲API获取JSON数据
         response = urlopen(req)
-        data = response.read().decode()
+        data = response.read().decode('utf-8', 'ignore')
 
         # 解析JSON数据
         result = json.loads(data)
@@ -167,11 +169,12 @@ class NetEaseMusicCloudSpider:
 
         sleep(0.2)
         self.headers['User-Agent'] = random.choice(user_agent)
-        req = Request(url='http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:]), headers=self.headers)
+        req = Request(url='http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:]),
+                      headers=self.headers)
 
         # 通过歌曲API获取JSON数据
         response = urlopen(req)
-        data = response.read().decode()
+        data = response.read().decode('utf-8', 'ignore')
 
         # 解析JSON数据
         result = json.loads(data)
