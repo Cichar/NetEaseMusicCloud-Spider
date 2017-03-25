@@ -10,14 +10,16 @@ NetEaseMusicCloud-Spider
     |-- models.py
     |-- headers.py
     |-- decorator.py
+    |-- music_style.py
     |-- proxy_pool
              |-- ip_spider.py
              |-- parse_html.py
 ```
 ##### 主入口：main.py     
        提供通过歌单来爬取及更新数据库歌曲信息的函数：run()     
-       提供检查数据库数据详情的函数：schemas_info()
-       
+       提供检查数据库数据详情的函数：schemas_info()  
+       提供获取所有歌曲风格歌单的函数：get_playlist()
+       
 ##### 爬取模块：NetEaseMusicCloudSpider.py  
        提供获取某风格热门歌单的函数：search_playlist()  
        提供获取某歌单中所有歌曲id的函数：get_music_list()  
@@ -39,6 +41,9 @@ NetEaseMusicCloud-Spider
 ##### 装饰器：decorator.py  
        提供异常重试装饰器：retry()
        
+##### 歌曲风格配置：music_style.py  
+       定义歌曲风格
+     
 ##### 代理池：proxy_pool
 ```
    ip_spider.py
