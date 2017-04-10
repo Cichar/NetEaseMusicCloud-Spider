@@ -22,10 +22,10 @@ class NetEaseMusicCloudSpider:
         self.db = ControlDB()
         self.style = music_style
         self.db_style = {
-            '电子': DzMusic,
-            'ACG': ACGMusic,
-            '轻音乐': LightMusic,
-            '治愈': ZyMusic
+            u'电子': DzMusic,
+            u'ACG': ACGMusic,
+            u'轻音乐': LightMusic,
+            u'治愈': ZyMusic
         }
         self.headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -50,9 +50,9 @@ class NetEaseMusicCloudSpider:
     
         """
 
-        driver = webdriver.PhantomJS('G:/PhantomJS/phantomjs-2.1.1-windows/bin/phantomjs')
+        driver = webdriver.PhantomJS('G:/Python/PhantomJS/phantomjs-2.1.1-windows/bin/phantomjs')
 
-        tag = self.style[music_style]
+        tag = self.style[music_style]['style']
 
         if not page_num:
             # 如果没有传入页码数，则获取页码数
@@ -102,7 +102,7 @@ class NetEaseMusicCloudSpider:
                           headers=self.headers)
 
             # 通过歌单API获取JSON数据
-            response = urlopen(req)
+            response = urlopen(req, timeout=2)
             data = response.read().decode('utf-8', 'ignore')
 
             # 解析JSON数据
@@ -118,9 +118,7 @@ class NetEaseMusicCloudSpider:
             else:
                 print('歌单数据解析失败')
         except Exception as e:
-            # print(self.headers['User-Agent'])
             print(e)
-            # pass
 
     @retry
     def get_music_comment(self, music_id):
@@ -139,7 +137,7 @@ class NetEaseMusicCloudSpider:
         req = Request(url='http://music.163.com/api/v1/resource/comments/{}'.format(music_id), headers=self.headers)
 
         # 通过歌曲API获取JSON数据
-        response = urlopen(req)
+        response = urlopen(req, timeout=2)
         data = response.read().decode('utf-8', 'ignore')
 
         # 解析JSON数据
@@ -173,7 +171,7 @@ class NetEaseMusicCloudSpider:
                       headers=self.headers)
 
         # 通过歌曲API获取JSON数据
-        response = urlopen(req)
+        response = urlopen(req, timeout=2)
         data = response.read().decode('utf-8', 'ignore')
 
         # 解析JSON数据
@@ -183,6 +181,10 @@ class NetEaseMusicCloudSpider:
         music_name, music_singer, publish_time = result['songs'][0]['name'], \
                                                  result['songs'][0]['artists'][0]['name'], \
                                                  result['songs'][0]['album']['publishTime']
+
+        # 如果在过滤列表则直接返回
+        if music_singer in self.style[tag]['filter_singer']:
+            return
 
         # 获取歌曲评论数
         music_comment_num = self.get_music_comment(music_id)
@@ -199,6 +201,7 @@ class NetEaseMusicCloudSpider:
             current_comments_num = music.comments
             if current_comments_num != music_comment_num:
                 music.comments = music_comment_num
+                music.update_time = datetime.utcnow()
                 self.db.session.commit()
                 update_comments_num = music.comments
                 print('更新歌曲信息:{0}  成功, {1} --> {2}'.format(music_id[7:], current_comments_num, update_comments_num))
@@ -206,7 +209,7 @@ class NetEaseMusicCloudSpider:
                 return
         else:
             music = model(id=music_id[7:], music_name=music_name, music_singer=music_singer,
-                          publish_time=date(publish_time), comments=music_comment_num)
+                          publish_time=date(publish_time), comments=music_comment_num, update_time=datetime.utcnow())
             self.db.session.add(music)
             self.db.session.commit()
             print('创建歌曲信息:%s  成功' % (music_id[7:]))

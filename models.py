@@ -40,6 +40,7 @@ class DzMusic(Base):
     music_singer = Column(String(128))
     publish_time = Column(DateTime())
     comments = Column(Integer())
+    update_time = Column(DateTime())
 
     def __repr__(self):
         return 'DzMusic %r' % self.id
@@ -59,6 +60,7 @@ class ACGMusic(Base):
     music_singer = Column(String(128))
     publish_time = Column(DateTime())
     comments = Column(Integer())
+    update_time = Column(DateTime())
 
     def __repr__(self):
         return 'ACGMusic %r' % self.id
@@ -78,6 +80,7 @@ class LightMusic(Base):
     music_singer = Column(String(128))
     publish_time = Column(DateTime())
     comments = Column(Integer())
+    update_time = Column(DateTime())
 
     def __repr__(self):
         return 'LightMusic %r' % self.id
@@ -97,6 +100,7 @@ class ZyMusic(Base):
     music_singer = Column(String(128))
     publish_time = Column(DateTime())
     comments = Column(Integer())
+    update_time = Column(DateTime())
 
     def __repr__(self):
         return 'ZyMusic %r' % self.id

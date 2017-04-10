@@ -14,10 +14,10 @@ def run(tag_num=None):
     """ 歌单检索 """
 
     tag_dict = {
-        '1': '电子',
-        '2': 'ACG',
-        '3': '轻音乐',
-        '4': '治愈'
+        '1': u'电子',
+        '2': u'ACG',
+        '3': u'轻音乐',
+        '4': u'治愈'
     }
 
     while True:
@@ -50,7 +50,7 @@ def get_playlist():
     for style in styles:
         spider.search_playlist(music_style=style)
 
-    print('歌单获取完毕')
+    print('所有歌单获取完毕')
 
 
 def schemas_info():
@@ -75,10 +75,41 @@ def schemas_info():
     print('治愈：{}'.format(zy_music_num))
 
 
+def filter_music():
+    """ 过滤数据库 """
+
+    filter_result = {}
+    for style in music_style:
+        delete_num = 0
+        print(u'** -- 开始清洗 %s 中的数据 -- **' % style)
+        model = spider.db_style[style]
+        for music_singer in music_style[style]['filter_singer']:
+            delete_musics = spider.db.session.query(model).filter_by(music_singer=music_singer).all()
+            if delete_musics:
+                delete_num += len(delete_musics)
+                for delete_music in delete_musics:
+                    try:
+                        print(u'删除 {0} 的 {1}'.format(music_singer, delete_music.music_name))
+                    except Exception as e:
+                        pass
+                    spider.db.session.delete(delete_music)
+                spider.db.session.commit()
+        print(u'** -- %s 清洗完毕 -- **' % style)
+        if delete_num !=0:
+            # 清洗结果统计
+            filter_result[style] = delete_num
+
+    print(u'** -- 数据清洗完毕 -- **')
+    if filter_result:
+        result_num = 0
+        for success_style in filter_result:
+            result_str = '{0}:{1}'.format(success_style, filter_result[success_style])
+            result_num += int(filter_result[success_style])
+            print(u'**' + ' '*5 + result_str)
+        print(u'** -- ' + ' '*2 + '{0}'.format(result_num) + ' '*2 + ' -- **')
+
 if __name__ == '__main__':
-    # print(spider.db.session.query(PlayList).count())
-    # spider.get_music_list(108600061)
-    # spider.db.init_db()
     # get_playlist()
     # run('2')
-    schemas_info()
+    # schemas_info()
+    filter_music()
