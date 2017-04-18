@@ -3,23 +3,21 @@
 __author__ = 'Cichar'
 __version__ = '0.2'
 
-from urllib.request import urlopen, Request
-from time import sleep
-from datetime import datetime
-from selenium import webdriver
 import json
-import random
+from datetime import datetime
+from time import sleep
 
-from control_db import ControlDB
-from models import PlayList, DzMusic, ACGMusic, LightMusic, ZyMusic
-from headers import user_agent
+from selenium import webdriver
+
 from decorator import retry
-from music_style import music_style
+from models import PlayList, DzMusic, ACGMusic, LightMusic, ZyMusic
+from spider import BaseSpider
+from spiders.music_style import music_style
 
 
-class NetEaseMusicCloudSpider:
+class NetEaseMusicCloudSpider(BaseSpider):
     def __init__(self):
-        self.db = ControlDB()
+        super().__init__()
         self.style = music_style
         self.db_style = {
             u'电子': DzMusic,
@@ -27,15 +25,6 @@ class NetEaseMusicCloudSpider:
             u'轻音乐': LightMusic,
             u'治愈': ZyMusic
         }
-        self.headers = {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Content-Type': 'application/json; charset=UTF-8',
-            'Accept-Encoding': 'deflate',
-            'Accept-Language': 'zh-CN,zh;q=0.8',
-            'Connection': 'keep-alive',
-            'Host': 'music.163.com',
-            'User-Agent': '',
-                        }
 
     def search_playlist(self, page_num=None, music_style=None):
         """
@@ -97,16 +86,10 @@ class NetEaseMusicCloudSpider:
 
         try:
             sleep(0.5)
-            self.headers['User-Agent'] = random.choice(user_agent)
-            req = Request(url='http://music.163.com/api/playlist/detail?id={}'.format(playlist_id),
-                          headers=self.headers)
+            url = 'http://music.163.com/api/playlist/detail?id={}'.format(playlist_id)
 
             # 通过歌单API获取JSON数据
-            response = urlopen(req, timeout=2)
-            data = response.read().decode('utf-8', 'ignore')
-
-            # 解析JSON数据
-            result = json.loads(data)
+            result = self.parse_url(url=url, header='wyy', parse_json=True)
 
             # 从解析过的数据中获取歌曲数据
             clear_result = result['result']['tracks']
@@ -133,15 +116,10 @@ class NetEaseMusicCloudSpider:
     
         """
 
-        self.headers['User-Agent'] = random.choice(user_agent)
-        req = Request(url='http://music.163.com/api/v1/resource/comments/{}'.format(music_id), headers=self.headers)
+        url = 'http://music.163.com/api/v1/resource/comments/{}'.format(music_id)
 
         # 通过歌曲API获取JSON数据
-        response = urlopen(req, timeout=2)
-        data = response.read().decode('utf-8', 'ignore')
-
-        # 解析JSON数据
-        result = json.loads(data)
+        result = self.parse_url(url=url, header='wyy', parse_json=True)
 
         comment_num = result['total']
 
@@ -165,17 +143,11 @@ class NetEaseMusicCloudSpider:
     
         """
 
-        sleep(0.2)
-        self.headers['User-Agent'] = random.choice(user_agent)
-        req = Request(url='http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:]),
-                      headers=self.headers)
+        sleep(0.8)
+        url = 'http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:])
 
         # 通过歌曲API获取JSON数据
-        response = urlopen(req, timeout=2)
-        data = response.read().decode('utf-8', 'ignore')
-
-        # 解析JSON数据
-        result = json.loads(data)
+        result = self.parse_url(url=url, header='wyy', parse_json=True)
 
         # 获取歌曲名，歌手，发行时间
         music_name, music_singer, publish_time = result['songs'][0]['name'], \
@@ -184,6 +156,7 @@ class NetEaseMusicCloudSpider:
 
         # 如果在过滤列表则直接返回
         if music_singer in self.style[tag]['filter_singer']:
+            print('* -------- 过滤歌曲 -------- *')
             return
 
         # 获取歌曲评论数
