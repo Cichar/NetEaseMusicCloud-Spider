@@ -3,11 +3,16 @@
 __author__ = 'Cichar'
 __version__ = '0.2'
 
-from NetEaseMusicCloudSpider import NetEaseMusicCloudSpider
-from models import PlayList, DzMusic, ACGMusic, LightMusic, ZyMusic
-from music_style import music_style
+from models import PlayList, DzMusic, ACGMusic, LightMusic, ZyMusic, ZhiHuUserInfo
+from spiders.NetEaseMusicCloudSpider import NetEaseMusicCloudSpider
+from spiders.ZhiHuSpider import ZhiHuSpider
+from spiders.music_style import music_style
 
 spider = NetEaseMusicCloudSpider()
+
+
+def zh_run(user_token=None, updata=False):
+    ZhiHuSpider().get_start(user_token=user_token, updata=updata)
 
 
 def run(tag_num=None):
@@ -65,14 +70,21 @@ def schemas_info():
     acg_music_num = spider.db.session.query(ACGMusic).count()
     light_music_num = spider.db.session.query(LightMusic).count()
     zy_music_num = spider.db.session.query(ZyMusic).count()
+    zhihu_user_num = spider.db.session.query(ZhiHuUserInfo).count()
 
     print('待爬取歌单：{0}, 电子：{1}, ACG：{2}, 轻音乐：{3}, 治愈：{4}'.format(playlist_num,
                                                                dz_playlist_num, acg_playlist_num,
                                                                light_playlist_num, zy_playlist_num))
+
+    all_music_num = dz_playlist_num + acg_music_num + light_music_num + zy_music_num
     print('电子歌曲：{}'.format(dz_music_num))
     print('ACG歌曲：{}'.format(acg_music_num))
     print('轻音乐：{}'.format(light_music_num))
     print('治愈：{}'.format(zy_music_num))
+    print('总计：{}'.format(all_music_num))
+
+    print('——————————————————————————————————————————————————')
+    print('知乎用户数据：{}'.format(zhihu_user_num))
 
 
 def filter_music():
