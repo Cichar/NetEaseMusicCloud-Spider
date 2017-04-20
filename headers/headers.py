@@ -8,7 +8,13 @@
 """
 
 headers = {
-    'default': {},
+    'default': {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'deflate',
+                'Accept-Language': 'zh-CN,zh;q=0.8',
+                'Connection': 'keep-alive',
+                'User-Agent': '',
+                },
     'wyy': {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Content-Type': 'application/json; charset=UTF-8',
