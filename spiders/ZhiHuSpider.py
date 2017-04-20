@@ -30,7 +30,6 @@ class ZhiHuSpider(BaseSpider):
                         'participated_live_count,allow_message,industry_category,org_name,org_homepage,' \
                         'badge[?(type=best_answerer)].topics'
 
-    @retry
     def get_user_info(self, user_token=None, updata=False):
         """
         
@@ -40,7 +39,7 @@ class ZhiHuSpider(BaseSpider):
         """
 
         user_info_url = 'http://www.zhihu.com/api/v4/members/{url_token}?include={user_arg}'
-        sleep(1)
+        sleep(0.5)
         try:
             data = self.parse_url(url=user_info_url.format(url_token=user_token, user_arg=self.user_arg),
                                   header='zhihu', parse_json=True)
@@ -116,6 +115,7 @@ class ZhiHuSpider(BaseSpider):
                         user.update_time = datetime.utcnow()
                         self.db.session.commit()
                         print('更新用户 --> %s' % name)
+                        return
                     else:
                         new_user = ZhiHuUserInfo(name=name, headline=headline, location=location,
                                                  description=description, voteup_count=voteup_count,
@@ -127,6 +127,7 @@ class ZhiHuSpider(BaseSpider):
                         self.db.session.add(new_user)
                         self.db.session.commit()
                         print('创建用户 --> %s' % name)
+                        return
                 else:
                     new_user = ZhiHuUserInfo(name=name, headline=headline, location=location, description=description,
                                              voteup_count=voteup_count, thanked_count=thanked_count,
@@ -138,6 +139,7 @@ class ZhiHuSpider(BaseSpider):
                     self.db.session.add(new_user)
                     self.db.session.commit()
                     print('创建用户 --> %s' % name)
+                    return
             else:
                 print('** get_user_info : 未获取到数据 **')
                 return
@@ -154,7 +156,7 @@ class ZhiHuSpider(BaseSpider):
         """
 
         follower_url = 'http://www.zhihu.com/api/v4/members/{url_token}/followers?include={follow_arg}&offset={offset}&limit={limit}'
-        sleep(1)
+        sleep(0.5)
         try:
             if user_token:
                 followers = self.parse_url(url=follower_url.format(url_token=user_token, follow_arg=self.follow_arg,
@@ -169,23 +171,27 @@ class ZhiHuSpider(BaseSpider):
                             # 默认包含更新数据
                             if updata:
                                 self.get_user_info(user_token=url_token)
+                                return
                             else:
                                 user = self.db.session.query(ZhiHuUserInfo).filter_by(url_token=url_token).first()
                                 if user:
                                     return
                                 else:
                                     self.get_user_info(user_token=url_token, updata=updata)
+                                return
                         else:
                             return
                 # 递归
                 if 'paging' in followers.keys() and followers.get('paging').get('is_end') is False:
                     url = followers.get('paging').get('next')
                     self.get_followers(url=url)
+                    return
             else:
                 print('** get_followers : 解析失败 **')
                 return
         except Exception as e:
             print('** get_followers : %s **' % str(e))
+            raise Exception(e)
 
     @retry
     def get_following(self, user_token=None, url=None, updata=False):
@@ -197,12 +203,12 @@ class ZhiHuSpider(BaseSpider):
         """
 
         following_url = 'http://www.zhihu.com/api/v4/members/{url_token}/followees?include={follow_arg}&offset={offset}&limit={limit}'
-        sleep(1)
+        sleep(0.5)
         try:
             if user_token:
                 followings = self.parse_url(url=following_url.format(url_token=user_token, follow_arg=self.follow_arg,
                                                                      offset=0, limit=20), header='zhihu',
-                                                                     parse_json=True)
+                                            parse_json=True)
             else:
                 followings = self.parse_url(url=url, header='zhihu', parse_json=True)
             if followings:
@@ -213,33 +219,32 @@ class ZhiHuSpider(BaseSpider):
                             # 默认包含更新数据
                             if updata:
                                 self.get_user_info(user_token=url_token)
+                                return
                             else:
                                 user = self.db.session.query(ZhiHuUserInfo).filter_by(url_token=url_token).first()
                                 if user:
                                     return
                                 else:
                                     self.get_user_info(user_token=url_token, updata=updata)
+                                return
                         else:
                             return
                 # 递归
                 if 'paging' in followings.keys() and followings.get('paging').get('is_end') is False:
                     url = followings.get('paging').get('next')
                     self.get_following(url=url)
+                    return
             else:
                 print('** get_following : 解析失败 **')
                 return
         except Exception as e:
             print('** get_following : %s **' % str(e))
+            raise Exception(e)
 
     def get_start(self, user_token=None, updata=False):
         """ 爬虫启动 """
 
-        if user_token:
-            user = self.db.session.query(ZhiHuUserInfo).filter_by(url_token=user_token).first()
-            if user:
-                user.crawl_flag = True
-                self.db.session.commit()
-        else:
+        if not user_token:
             crawl_user = self.db.session.query(ZhiHuUserInfo).filter_by(crawl_flag=None or False).first()
             crawl_user.crawl_flag = True
             self.db.session.commit()
@@ -248,9 +253,15 @@ class ZhiHuSpider(BaseSpider):
             self.get_user_info(user_token=user_token)
             self.get_following(user_token=user_token, updata=updata)
             self.get_followers(user_token=user_token, updata=updata)
+
             # 取一个没有爬过的用户
             crawl_user = self.db.session.query(ZhiHuUserInfo).filter_by(crawl_flag=None or False).first()
+
+            crawl_user.crawl_flag = True
+            self.db.session.commit()
             url_token = crawl_user.url_token
+
+            # print('** 开始分析 : %s **' % url_token)
             self.get_start(user_token=url_token)
         except Exception as e:
             print('** get_start : %s **' % str(e))
