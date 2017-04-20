@@ -70,9 +70,7 @@ class BaseSpider:
                 return data
         except Exception as e:
             print('** parse_url : %s **' % str(e))
-            if '503' in str(e):
-                print('** 服务器已进行限制 **')
-                exit()
+            raise Exception(e)
 
 if __name__ == '__main__':
     test = BaseSpider()
