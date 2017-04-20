@@ -143,7 +143,7 @@ class NetEaseMusicCloudSpider(BaseSpider):
     
         """
 
-        sleep(0.8)
+        sleep(0.2)
         url = 'http://music.163.com/api/song/detail/?id={0}&ids=[{0}]'.format(music_id[7:])
 
         # 通过歌曲API获取JSON数据
